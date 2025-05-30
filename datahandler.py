@@ -91,10 +91,10 @@ def load_participant(code='L0S1Z2I3',
                                   & (trimmed_data['MarkerName'] == 'Experiment')
                                   & (trimmed_data['MarkerType'] == 'E')].iloc[0]
     
-    sections = {'before':[before_audio_start, before_audio_end], 'calm':[calm_audio_start, calm_audio_end],
-                'interim':[interim_audio_start, interim_audio_end],
-                'intense':[intense_audio_start, intense_audio_end],
-                'after':[after_audio_start, after_audio_end]}
+    sections = {'before':[before_audio_start['Timestamp'], before_audio_end['Timestamp']], 'calm':[calm_audio_start['Timestamp'], calm_audio_end['Timestamp']],
+                'interim':[interim_audio_start['Timestamp'], interim_audio_end['Timestamp']],
+                'intense':[intense_audio_start['Timestamp'], intense_audio_end['Timestamp']],
+                'after':[after_audio_start['Timestamp'], after_audio_end['Timestamp']]}
     
 
     
