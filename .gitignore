@@ -1,3 +1,5 @@
 /stuff/
 /data/
 *.png
+/participant data/
+*.pyc
