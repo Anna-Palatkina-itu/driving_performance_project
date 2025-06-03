@@ -1,0 +1,6 @@
+- Look at ordering effect
+- Look at female/male effect
+- Look at age effect
+- create combined driving performance metric
+- Also look at no_audio/audio
+- Quality control of data (remove strong outliers)

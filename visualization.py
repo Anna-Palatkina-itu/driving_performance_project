@@ -107,23 +107,20 @@ def plot_column(data, column='VelocityX', unit='m', sections=None):
 
     plt.tight_layout()
 
-def compare_perf_kdes(participant_code, data, sections=None):
-  pairs = [
-      ('VelocityX', 'Lateral Velocity'),
-      ('DistanceToTargetSpeed', 'Difference from Correct Speed'),
-      ('DistanceToTargetPosition','Distance from Correct Lane')
-  ]
-  # Create a figure with enough subplots (3 rows, 1 column here)
-  fig, axes = plt.subplots(1, len(pairs), figsize=(4*len(pairs), 5), constrained_layout=True)
+def compare_perf_kdes(participant_code, data, sections=None, pairs=None, save_path='./perf_plots/'):
+  if pairs is None:
+    pairs = [
+        ('VelocityX', 'Lateral Velocity'),
+        ('DistanceToTargetSpeed', 'Difference from Correct Speed'),
+        ('DistanceToTargetPosition','Distance from Correct Lane')
+    ]
 
-  # If only one subplot, axes is not a list, so make it a list for uniformity:
-  if len(pairs) == 1:
-    axes = [axes]
+  fig, axes = plt.subplots(1, len(pairs), figsize=(4*len(pairs), 5), constrained_layout=True)
 
   for ax, (col1, col2) in zip(axes, pairs):
     kde_column(data, col1, col2, ax=ax, sections=sections)
 
   plt.suptitle(f'Participant {participant_code}')
-  plt.savefig(f'Participant {participant_code}.png',dpi=300)
+  plt.savefig(f'{save_path}{participant_code}.png',dpi=300)
   
   return fig, axes
