@@ -59,7 +59,7 @@ def get_statistics(data, column='DistanceToTargetPosition',
 
 def load_participant(code='L0S1Z2I3',
                      path='participant data',
-                     eye_tracking=False):
+                     eye_tracking=False, remove_outliers=None):
   data = pd.read_csv(f'{path}{code}.csv', comment='#', low_memory=False)
 
 
@@ -154,5 +154,38 @@ def load_participant(code='L0S1Z2I3',
   except:
     sections = construct_timestamps(int(before_audio_start['Timestamp']))
     
-    
+  if remove_outliers:
+    for column in remove_outliers:
+      trimmed_data = replace_outliers_from_column(trimmed_data, column=column, threshold=3)
+
   return trimmed_data, sections
+
+
+
+def replace_outliers_from_column(data, column='DistanceToTargetPosition', threshold=3):
+    """
+    Removes outliers from the specified column in the DataFrame based on a z-score threshold.
+    Outliers are replaced by the column mean if their z-score exceeds the threshold.
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the data.
+        column (str): The column from which to remove outliers.
+        threshold (float): The z-score threshold for identifying outliers.
+    """
+    new_data = data.copy()
+    z_scores = (new_data[column] - new_data[column].mean()) / new_data[column].std()
+    outliers = np.abs(z_scores) > threshold
+    new_data.loc[outliers, column] = new_data[column].mean()
+    return new_data
+
+def remove_outliers_from_column(data, column='DistanceToTargetPosition', threshold=3):
+    """
+    Removes outliers from the specified column in the DataFrame based on a z-score threshold.
+    Outliers are dropped from the DataFrame.
+    Args:
+        data (pd.DataFrame): The input DataFrame containing the data.
+        column (str): The column from which to remove outliers.
+        threshold (float): The z-score threshold for identifying outliers.
+    """
+    new_data = data.copy()
+    z_scores = (new_data[column] - new_data[column].mean()) / new_data[column].std()
+    return new_data[~(np.abs(z_scores) > threshold)]
