@@ -62,9 +62,13 @@ def load_participant(code='L0S1Z2I3',
                      eye_tracking=False, remove_outliers=None):
   data = pd.read_csv(f'{path}{code}.csv', comment='#', low_memory=False)
 
-
+  gender = None
   with open(f'{path}{code}.csv', 'r+') as f:
     for line in f.readlines():
+      if line.startswith('#Respondent Gender'):
+        gender = line.replace('#Respondent Gender,','').strip().replace(',','')
+      if line.startswith('#Respondent Age'):
+        age = int(line.replace('#Respondent Age,','').strip().replace(',',''))
       if line.startswith('#Recording time'):
         timestamp_str = line.replace('#Recording time,Date: ', '')
         timestamp_str = timestamp_str[:timestamp_str.find(',Unix time:')]
@@ -153,12 +157,13 @@ def load_participant(code='L0S1Z2I3',
                   'after':[after_audio_start['Timestamp'], after_audio_end['Timestamp']]}
   except:
     sections = construct_timestamps(int(before_audio_start['Timestamp']))
+    calmFirst = sections['calm'][0] < sections['intense'][1]
     
   if remove_outliers:
     for column in remove_outliers:
       trimmed_data = replace_outliers_from_column(trimmed_data, column=column, threshold=3)
 
-  return trimmed_data, sections
+  return trimmed_data, sections, gender, age, calmFirst
 
 
 
