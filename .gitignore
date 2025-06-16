@@ -3,3 +3,6 @@
 *.png
 /participant data/
 *.pyc
+*.zip
+/markers/
+/perf_plots/

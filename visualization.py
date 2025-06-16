@@ -123,5 +123,6 @@ def compare_perf_kdes(participant_code, data, sections=None, pairs=None, save_pa
 
   plt.suptitle(f'Participant {participant_code}')
   plt.savefig(f'{save_path}{participant_code}.png',dpi=300)
+  plt.close(fig)
   
   return fig, axes

@@ -2,12 +2,12 @@ import pandas as pd
 from datetime import timedelta, datetime, timezone
 import numpy as np
 import scipy as scp
-
+from scipy.stats import skew
 
 def ts(x):
   return int(x.timestamp() * 1000)
 
-def construct_timestamps(starting_timestamp):
+def construct_timestamps(starting_timestamp, calm_first=False):
   """ timestamp in milliseconds"""
 
   before_duration = timedelta(seconds=210)
@@ -16,17 +16,27 @@ def construct_timestamps(starting_timestamp):
   interim_duration = timedelta(seconds=49)
   after_duration = timedelta(minutes=15) - before_duration - negative_duration - positive_duration - interim_duration
 
-  before_starting_timestamp = datetime.fromtimestamp(starting_timestamp / 1000, tz=timezone.utc) - before_duration
+  before_starting_timestamp = datetime.fromtimestamp(starting_timestamp / 1000, tz=timezone.utc)
 
   before_audio_end = before_starting_timestamp + before_duration
-  calm_audio_start = before_audio_end
-  calm_audio_end = calm_audio_start + positive_duration
-  interim_audio_start = calm_audio_end
-  interim_audio_end = interim_audio_start + interim_duration
-  intense_audio_start = interim_audio_end
-  intense_audio_end = intense_audio_start + negative_duration
-  after_audio_start = intense_audio_end
-  after_audio_end = after_audio_start + after_duration
+  if calm_first:
+    calm_audio_start = before_audio_end
+    calm_audio_end = calm_audio_start + positive_duration
+    interim_audio_start = calm_audio_end
+    interim_audio_end = interim_audio_start + interim_duration
+    intense_audio_start = interim_audio_end
+    intense_audio_end = intense_audio_start + negative_duration
+    after_audio_start = intense_audio_end
+    after_audio_end = after_audio_start + after_duration
+  else:
+    intense_audio_start = before_audio_end
+    intense_audio_end = intense_audio_start + negative_duration
+    interim_audio_start = intense_audio_end
+    interim_audio_end = interim_audio_start + interim_duration
+    calm_audio_start = interim_audio_end
+    calm_audio_end = calm_audio_start + positive_duration
+    after_audio_start = calm_audio_end
+    after_audio_end = after_audio_start + after_duration
 
 
 
@@ -53,7 +63,11 @@ def get_statistics(data, column='DistanceToTargetPosition',
   segment2 = data[(data['Timestamp'] > intense_start) &
                           (data['Timestamp'] < intense_end)][column].dropna()
 #   print(segment1)
-
+  assert(segment1.all() != np.nan)
+  assert(segment2.all() != np.nan)
+  assert(len(segment1) > 0)
+  assert(len(segment2) > 0)
+  
   return np.mean(segment1), np.std(segment1), scp.stats.moment(segment1, order=3, center=True),  np.mean(segment2), np.std(segment2), scp.stats.moment(segment2, order=3, center=True)
 
 
@@ -63,8 +77,11 @@ def load_participant(code='L0S1Z2I3',
   data = pd.read_csv(f'{path}{code}.csv', comment='#', low_memory=False)
 
   gender = None
+  comment_lines = []
   with open(f'{path}{code}.csv', 'r+') as f:
     for line in f.readlines():
+      if line.startswith('#'):
+        comment_lines.append(line)
       if line.startswith('#Respondent Gender'):
         gender = line.replace('#Respondent Gender,','').strip().replace(',','')
       if line.startswith('#Respondent Age'):
@@ -84,7 +101,10 @@ def load_participant(code='L0S1Z2I3',
 
   nanoseconds = int(ts.value)
 
+  data['Gender'] = gender
+  data['Age'] = age
 
+  data['Participant'] = code
 
 
   if eye_tracking:
@@ -131,6 +151,7 @@ def load_participant(code='L0S1Z2I3',
     intense_audio_start = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='IntenseAudio') & (trimmed_data['MarkerType']=='S')].iloc[0]
     intense_audio_end = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='IntenseAudio') & (trimmed_data['MarkerType']=='E')].iloc[0]
 
+    end_of_experiment = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='Experiment') & (trimmed_data['MarkerType']=='E')].iloc[-1]
 
     calmFirst = calm_audio_start['Timestamp'] < intense_audio_end['Timestamp']
 
@@ -156,12 +177,48 @@ def load_participant(code='L0S1Z2I3',
                   'intense':[intense_audio_start['Timestamp'], intense_audio_end['Timestamp']],
                   'after':[after_audio_start['Timestamp'], after_audio_end['Timestamp']]}
   except:
+    print('Constructing timestamps from scratch')
     sections = construct_timestamps(int(before_audio_start['Timestamp']))
-    calmFirst = sections['calm'][0] < sections['intense'][1]
+    calmFirst = sections['calm'][0] < sections['intense'][0]
+
+    before_audio_start = {'Timestamp': sections['before'][0], 'MarkerName': 'Experiment', 'MarkerType': 'S'}
+    before_audio_end = {'Timestamp': sections['before'][1], 'MarkerName': 'Experiment', 'MarkerType': 'S'}
+    calm_audio_start = {'Timestamp': sections['calm'][0], 'MarkerName': 'CalmAudio', 'MarkerType': 'S'}
+    calm_audio_end = {'Timestamp': sections['calm'][1], 'MarkerName': 'CalmAudio', 'MarkerType': 'E'}
+    interim_audio_start = {'Timestamp': sections['interim'][0], 'MarkerName': 'InterimAudio', 'MarkerType': 'S'}
+    interim_audio_end = {'Timestamp': sections['interim'][1], 'MarkerName': 'InterimAudio', 'MarkerType': 'E'}
+    intense_audio_start = {'Timestamp': sections['intense'][0], 'MarkerName': 'IntenseAudio', 'MarkerType': 'S'}
+    intense_audio_end = {'Timestamp': sections['intense'][1], 'MarkerName': 'IntenseAudio', 'MarkerType': 'E'}
+    after_audio_end = {'Timestamp': sections['after'][1], 'MarkerName': 'Experiment', 'MarkerType': 'E'}
+
+    data = pd.concat([data, pd.DataFrame([before_audio_start, before_audio_end, calm_audio_start, calm_audio_end, interim_audio_start, interim_audio_end, intense_audio_start, intense_audio_end, after_audio_end])], ignore_index=True)
+    data = data.sort_values(by='Timestamp')
+    with open(f'{path}{code}_redone.csv', 'w+') as f:
+      f.writelines(comment_lines)
+      data.to_csv(f, index=False)
+    print('Saved reconstructed markers to CSV')
+
+
     
+  trimmed_data['Order'] = 'PN' if calmFirst else 'NP'
+
+  #Add column DrivingPerformance which is the mean corrected product of the distance to the target position and the distance to the target speed
+  #Total lane width is 13m, minimum speed is 0, maximum 150
+  normalized_distance = (trimmed_data['DistanceToTargetPosition'] - 6.5) / 6.5
+  normalized_speed = (trimmed_data['DistanceToTargetSpeed'] - 75) / 75
+ 
+  trimmed_data['DrivingPerformance'] = normalized_distance * normalized_speed
+
+  #Save sections to new csv file
+  with open(f'./data/markers/{code}_sections.csv', 'w+') as f:
+    f.write('#Sections\n')
+    for section, timestamps in sections.items():
+      f.write(f'{section},{timestamps[0]},{timestamps[1]}\n')
+
   if remove_outliers:
     for column in remove_outliers:
       trimmed_data = replace_outliers_from_column(trimmed_data, column=column, threshold=3)
+
 
   return trimmed_data, sections, gender, age, calmFirst
 

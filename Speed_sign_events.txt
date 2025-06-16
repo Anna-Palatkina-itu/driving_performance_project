@@ -1,0 +1,62 @@
+Speed Sign Events with 3 second windows
+
+
+T-test results for Lateral Velocity, intense vs calm:
+Means: 0.30494655428547
+STDs: 0.6409595215478836
+Mom^3s: 0.5720462460906566
+
+Kruskal results for Lateral Velocity, intense vs calm:
+Means: 0.4289644179489518
+STDs: 0.35887053394071755
+Mom^3s: 0.6578088460507256
+
+Wilcoxn results for Lateral Velocity, intense vs calm:
+Means: 0.6705245971679688
+STDs: 0.5798416137695312
+Mom^3s: 0.7337265014648438
+
+T-test results for Difference to Correct Speed, intense vs calm:
+Means: 0.7580018652781542
+STDs: 0.16381282066441633
+Mom^3s: 0.45031068382974515
+
+Kruskal results for Difference to Correct Speed, intense vs calm:
+Means: 0.3929708076289571
+STDs: 0.12107159221669828
+Mom^3s: 0.1545226206284617
+
+Wilcoxn results for Difference to Correct Speed, intense vs calm:
+Means: 0.6705245971679688
+STDs: 0.24620819091796875
+Mom^3s: 0.4171142578125
+
+T-test results for Distance to Correct Lane, intense vs calm:
+Means: 0.31322207416884684
+STDs: 0.6424539787621699
+Mom^3s: 0.7181244561204685
+
+Kruskal results for Distance to Correct Lane, intense vs calm:
+Means: 0.268142204500005
+STDs: 0.35887053394071755
+Mom^3s: 0.5477511407006326
+
+Wilcoxn results for Distance to Correct Lane, intense vs calm:
+Means: 0.19638824462890625
+STDs: 0.6705245971679688
+Mom^3s: 0.6094589233398438
+
+T-test results for Inverse Driving Performance, intense vs calm:
+Means: 0.4266009045193335
+STDs: 0.38166534336371405
+Mom^3s: 0.8965977981686584
+
+Kruskal results for Inverse Driving Performance, intense vs calm:
+Means: 0.2172381591548614
+STDs: 0.12107159221669828
+Mom^3s: 0.09992709075734173
+
+Wilcoxn results for Inverse Driving Performance, intense vs calm:
+Means: 0.4171142578125
+STDs: 0.32472991943359375
+Mom^3s: 0.44229888916015625
