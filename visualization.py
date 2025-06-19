@@ -113,7 +113,7 @@ def compare_perf_kdes(participant_code, data, sections=None, pairs=None, save_pa
         ('VelocityX', 'Lateral Velocity'),
         ('DistanceToTargetSpeed', 'Difference from Correct Speed'),
         ('DistanceToTargetPosition','Distance from Correct Lane'),
-        ('CarSpeed', 'Car Speed'),
+        ('DrivingPerformance', 'Driving Performance'),
     ]
 
   fig, axes = plt.subplots(1, len(pairs), figsize=(4*len(pairs), 5), constrained_layout=True)

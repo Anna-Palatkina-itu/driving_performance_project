@@ -62,18 +62,19 @@ def get_statistics(data, column='DistanceToTargetPosition',
                           (data['Timestamp'] < calm_end)][column].dropna()
   segment2 = data[(data['Timestamp'] > intense_start) &
                           (data['Timestamp'] < intense_end)][column].dropna()
-#   print(segment1)
+  #   print(segment1)
   assert(segment1.all() != np.nan)
   assert(segment2.all() != np.nan)
   assert(len(segment1) > 0)
   assert(len(segment2) > 0)
-  
+
   return np.mean(segment1), np.std(segment1), scp.stats.moment(segment1, order=3, center=True),  np.mean(segment2), np.std(segment2), scp.stats.moment(segment2, order=3, center=True)
 
 
 def load_participant(code='L0S1Z2I3',
                      path='participant data',
-                     eye_tracking=False, remove_outliers=None):
+                     eye_tracking=False,
+                     remove_outliers=None):
   data = pd.read_csv(f'{path}{code}.csv', comment='#', low_memory=False)
 
   gender = None
@@ -83,9 +84,11 @@ def load_participant(code='L0S1Z2I3',
       if line.startswith('#'):
         comment_lines.append(line)
       if line.startswith('#Respondent Gender'):
-        gender = line.replace('#Respondent Gender,','').strip().replace(',','')
+        gender = line.replace('#Respondent Gender,',
+                              '').strip().replace(',', '')
       if line.startswith('#Respondent Age'):
-        age = int(line.replace('#Respondent Age,','').strip().replace(',',''))
+        age = int(
+            line.replace('#Respondent Age,', '').strip().replace(',', ''))
       if line.startswith('#Recording time'):
         timestamp_str = line.replace('#Recording time,Date: ', '')
         timestamp_str = timestamp_str[:timestamp_str.find(',Unix time:')]
@@ -101,131 +104,222 @@ def load_participant(code='L0S1Z2I3',
 
   nanoseconds = int(ts.value)
 
-  data['Gender'] = gender
-  data['Age'] = age
-
-  data['Participant'] = code
-
-
   if eye_tracking:
-    state_data = pd.read_csv(f'data/3d_eye_states_{code}.csv', comment='#')     
-    state_data['timestamp [ns]'] = state_data['timestamp [ns]'].apply(lambda x: (x - nanoseconds)/ (10**6))
+    state_data = pd.read_csv(f'data/3d_eye_states_{code}.csv', comment='#')
+    state_data['timestamp [ns]'] = state_data['timestamp [ns]'].apply(
+        lambda x: (x - nanoseconds) / (10**6))
 
     state_data.rename(columns={'timestamp [ns]': 'Timestamp'}, inplace=True)
-    state_data.rename(columns={'pupil diameter left [mm]': 'ET_PupilLeft'}, inplace=True)
+    state_data.rename(columns={'pupil diameter left [mm]': 'ET_PupilLeft'},
+                      inplace=True)
     state_data.rename(columns={'pupil diameter right [mm]': 'ET_PupilRight'},
-                  inplace=True)
+                      inplace=True)
 
     data['ET_PupilLeft'] = np.nan
     data['ET_PupilRight'] = np.nan
 
-    subset = state_data[['Timestamp', 'ET_PupilLeft','ET_PupilRight']]
+    subset = state_data[['Timestamp', 'ET_PupilLeft', 'ET_PupilRight']]
 
     # Append to df1
     combined = pd.concat([data, subset], ignore_index=True)
 
     # Sort by timestep
-    combined_sorted = combined.sort_values(by='Timestamp').reset_index(drop=True)
+    combined_sorted = combined.sort_values(by='Timestamp').reset_index(
+        drop=True)
     data = combined_sorted
-    
-  
+
   interpolated_data = data.ffill()
-  
+
   try:
-      trimmed_data = interpolated_data[['Timestamp', 'Channel 13 (Raw)','Channel 9 (Raw)', 'MarkerName','MarkerDescription','MarkerType', 'DistanceToNextSpeedSign', 'DistanceToNextOverheadSign', 'VelocityX', 'DistanceToTargetPosition',
-              'DistanceToTargetSpeed', 'CarSpeed', 'ET_PupilLeft', 'ET_PupilRight']]
+    trimmed_data = interpolated_data[[
+        'Timestamp', 'Channel 13 (Raw)', 'Channel 9 (Raw)', 'MarkerName',
+        'MarkerDescription', 'MarkerType', 'DistanceToNextSpeedSign',
+        'DistanceToNextOverheadSign', 'VelocityX', 'DistanceToTargetPosition',
+        'DistanceToTargetSpeed', 'CarSpeed', 'ET_PupilLeft', 'ET_PupilRight'
+    ]]
   except:
-      trimmed_data = interpolated_data[['Timestamp', 'Channel 13 (ECG100C)','Channel 9 (EDA100C)', 'MarkerName','MarkerDescription','MarkerType', 'DistanceToNextSpeedSign', 'DistanceToNextOverheadSign', 'VelocityX', 'DistanceToTargetPosition',
-              'DistanceToTargetSpeed', 'CarSpeed', 'ET_PupilLeft', 'ET_PupilRight']]
-        
-  try:      
-    before_audio_start = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='Experiment') & (trimmed_data['MarkerType']=='S')].iloc[0]
-    before_audio_end = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='Experiment') & (trimmed_data['MarkerType']=='S')].iloc[-1]
+    trimmed_data = interpolated_data[[
+        'Timestamp', 'Channel 13 (ECG100C)', 'Channel 9 (EDA100C)',
+        'MarkerName', 'MarkerDescription', 'MarkerType',
+        'DistanceToNextSpeedSign', 'DistanceToNextOverheadSign', 'VelocityX',
+        'DistanceToTargetPosition', 'DistanceToTargetSpeed', 'CarSpeed',
+        'ET_PupilLeft', 'ET_PupilRight'
+    ]]
 
-    calm_audio_start = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='CalmAudio') & (trimmed_data['MarkerType']=='S')].iloc[0]
-    calm_audio_end = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='CalmAudio') & (trimmed_data['MarkerType']=='E')].iloc[0]
+  try:
+    before_audio_start = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'Experiment') &
+        (trimmed_data['MarkerType'] == 'S')].iloc[0]
+    before_audio_end = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'Experiment') &
+        (trimmed_data['MarkerType'] == 'S')].iloc[-1]
 
-    interim_audio_start = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='InterimAudio') & (trimmed_data['MarkerType']=='S')].iloc[0]
-    interim_audio_end = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='InterimAudio') & (trimmed_data['MarkerType']=='E')].iloc[0]
+    calm_audio_start = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'CalmAudio') &
+        (trimmed_data['MarkerType'] == 'S')].iloc[0]
+    calm_audio_end = trimmed_data[trimmed_data['MarkerName'].notna()
+                                  & (trimmed_data['MarkerName'] == 'CalmAudio')
+                                  &
+                                  (trimmed_data['MarkerType'] == 'E')].iloc[0]
 
-    intense_audio_start = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='IntenseAudio') & (trimmed_data['MarkerType']=='S')].iloc[0]
-    intense_audio_end = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='IntenseAudio') & (trimmed_data['MarkerType']=='E')].iloc[0]
+    interim_audio_start = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'InterimAudio') &
+        (trimmed_data['MarkerType'] == 'S')].iloc[0]
+    interim_audio_end = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'InterimAudio') &
+        (trimmed_data['MarkerType'] == 'E')].iloc[0]
 
-    end_of_experiment = trimmed_data[trimmed_data['MarkerName'].notna() & (trimmed_data['MarkerName']=='Experiment') & (trimmed_data['MarkerType']=='E')].iloc[-1]
+    intense_audio_start = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'IntenseAudio') &
+        (trimmed_data['MarkerType'] == 'S')].iloc[0]
+    intense_audio_end = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'IntenseAudio') &
+        (trimmed_data['MarkerType'] == 'E')].iloc[0]
+
+    end_of_experiment = trimmed_data[
+        trimmed_data['MarkerName'].notna()
+        & (trimmed_data['MarkerName'] == 'Experiment') &
+        (trimmed_data['MarkerType'] == 'E')].iloc[-1]
 
     calmFirst = calm_audio_start['Timestamp'] < intense_audio_end['Timestamp']
 
     if calmFirst:
-      after_audio_start = trimmed_data[trimmed_data['MarkerName'].notna() & (
-          trimmed_data['MarkerName'] == 'IntenseAudio') &
-                                      (trimmed_data['MarkerType'] == 'E')].iloc[0]
+      after_audio_start = trimmed_data[
+          trimmed_data['MarkerName'].notna()
+          & (trimmed_data['MarkerName'] == 'IntenseAudio') &
+          (trimmed_data['MarkerType'] == 'E')].iloc[0]
 
-      after_audio_end = trimmed_data[trimmed_data['MarkerName'].notna()
-                                    & (trimmed_data['MarkerName'] == 'Experiment')
-                                    & (trimmed_data['MarkerType'] == 'E')].iloc[0]
+      after_audio_end = trimmed_data[
+          trimmed_data['MarkerName'].notna()
+          & (trimmed_data['MarkerName'] == 'Experiment')
+          & (trimmed_data['MarkerType'] == 'E')].iloc[0]
 
     else:
-      after_audio_start = trimmed_data[trimmed_data['MarkerName'].notna() & (
-          trimmed_data['MarkerName'] == 'CalmAudio') &
-                                      (trimmed_data['MarkerType'] == 'E')].iloc[0]
-      after_audio_end = trimmed_data[trimmed_data['MarkerName'].notna()
-                                    & (trimmed_data['MarkerName'] == 'Experiment')
-                                    & (trimmed_data['MarkerType'] == 'E')].iloc[0]
+      after_audio_start = trimmed_data[
+          trimmed_data['MarkerName'].notna()
+          & (trimmed_data['MarkerName'] == 'CalmAudio') &
+          (trimmed_data['MarkerType'] == 'E')].iloc[0]
+      after_audio_end = trimmed_data[
+          trimmed_data['MarkerName'].notna()
+          & (trimmed_data['MarkerName'] == 'Experiment')
+          & (trimmed_data['MarkerType'] == 'E')].iloc[0]
 
-    sections = {'before':[before_audio_start['Timestamp'], before_audio_end['Timestamp']], 'calm':[calm_audio_start['Timestamp'], calm_audio_end['Timestamp']],
-                  'interim':[interim_audio_start['Timestamp'], interim_audio_end['Timestamp']],
-                  'intense':[intense_audio_start['Timestamp'], intense_audio_end['Timestamp']],
-                  'after':[after_audio_start['Timestamp'], after_audio_end['Timestamp']]}
+    sections = {
+        'before':
+        [before_audio_start['Timestamp'], before_audio_end['Timestamp']],
+        'calm': [calm_audio_start['Timestamp'], calm_audio_end['Timestamp']],
+        'interim':
+        [interim_audio_start['Timestamp'], interim_audio_end['Timestamp']],
+        'intense':
+        [intense_audio_start['Timestamp'], intense_audio_end['Timestamp']],
+        'after':
+        [after_audio_start['Timestamp'], after_audio_end['Timestamp']]
+    }
   except:
     print('Constructing timestamps from scratch')
     sections = construct_timestamps(int(before_audio_start['Timestamp']))
     calmFirst = sections['calm'][0] < sections['intense'][0]
 
-    before_audio_start = {'Timestamp': sections['before'][0], 'MarkerName': 'Experiment', 'MarkerType': 'S'}
-    before_audio_end = {'Timestamp': sections['before'][1], 'MarkerName': 'Experiment', 'MarkerType': 'S'}
-    calm_audio_start = {'Timestamp': sections['calm'][0], 'MarkerName': 'CalmAudio', 'MarkerType': 'S'}
-    calm_audio_end = {'Timestamp': sections['calm'][1], 'MarkerName': 'CalmAudio', 'MarkerType': 'E'}
-    interim_audio_start = {'Timestamp': sections['interim'][0], 'MarkerName': 'InterimAudio', 'MarkerType': 'S'}
-    interim_audio_end = {'Timestamp': sections['interim'][1], 'MarkerName': 'InterimAudio', 'MarkerType': 'E'}
-    intense_audio_start = {'Timestamp': sections['intense'][0], 'MarkerName': 'IntenseAudio', 'MarkerType': 'S'}
-    intense_audio_end = {'Timestamp': sections['intense'][1], 'MarkerName': 'IntenseAudio', 'MarkerType': 'E'}
-    after_audio_end = {'Timestamp': sections['after'][1], 'MarkerName': 'Experiment', 'MarkerType': 'E'}
+    before_audio_start = {
+        'Timestamp': sections['before'][0],
+        'MarkerName': 'Experiment',
+        'MarkerType': 'S'
+    }
+    before_audio_end = {
+        'Timestamp': sections['before'][1],
+        'MarkerName': 'Experiment',
+        'MarkerType': 'S'
+    }
+    calm_audio_start = {
+        'Timestamp': sections['calm'][0],
+        'MarkerName': 'CalmAudio',
+        'MarkerType': 'S'
+    }
+    calm_audio_end = {
+        'Timestamp': sections['calm'][1],
+        'MarkerName': 'CalmAudio',
+        'MarkerType': 'E'
+    }
+    interim_audio_start = {
+        'Timestamp': sections['interim'][0],
+        'MarkerName': 'InterimAudio',
+        'MarkerType': 'S'
+    }
+    interim_audio_end = {
+        'Timestamp': sections['interim'][1],
+        'MarkerName': 'InterimAudio',
+        'MarkerType': 'E'
+    }
+    intense_audio_start = {
+        'Timestamp': sections['intense'][0],
+        'MarkerName': 'IntenseAudio',
+        'MarkerType': 'S'
+    }
+    intense_audio_end = {
+        'Timestamp': sections['intense'][1],
+        'MarkerName': 'IntenseAudio',
+        'MarkerType': 'E'
+    }
+    after_audio_end = {
+        'Timestamp': sections['after'][1],
+        'MarkerName': 'Experiment',
+        'MarkerType': 'E'
+    }
 
-    data = pd.concat([data, pd.DataFrame([before_audio_start, before_audio_end, calm_audio_start, calm_audio_end, interim_audio_start, interim_audio_end, intense_audio_start, intense_audio_end, after_audio_end])], ignore_index=True)
+    data = pd.concat([
+        data,
+        pd.DataFrame([
+            before_audio_start, before_audio_end, calm_audio_start,
+            calm_audio_end, interim_audio_start, interim_audio_end,
+            intense_audio_start, intense_audio_end, after_audio_end
+        ])
+    ],
+                     ignore_index=True)
     data = data.sort_values(by='Timestamp')
     with open(f'{path}{code}_redone.csv', 'w+') as f:
       f.writelines(comment_lines)
       data.to_csv(f, index=False)
     print('Saved reconstructed markers to CSV')
 
-
-    
   trimmed_data['Order'] = 'PN' if calmFirst else 'NP'
 
   #Add column DrivingPerformance which is the mean corrected product of the distance to the target position and the distance to the target speed
   #Total lane width is 13m, minimum speed is 0, maximum 150
   normalized_distance = (trimmed_data['DistanceToTargetPosition'] - 6.5) / 6.5
   normalized_speed = (trimmed_data['DistanceToTargetSpeed'] - 75) / 75
- 
+
   trimmed_data['DrivingPerformance'] = normalized_distance * normalized_speed
 
-  #Save sections to new csv file
-  with open(f'./data/markers/{code}_sections.csv', 'w+') as f:
-    f.write('#Sections\n')
-    for section, timestamps in sections.items():
-      f.write(f'{section},{timestamps[0]},{timestamps[1]}\n')
+  trimmed_data['Gender'] = gender
+  trimmed_data['Age'] = age
+  print(f'code is {code}')
+  trimmed_data['Participant'] = code
+  print(trimmed_data['Participant'].unique())
+  # #Save sections to new csv file
+  # with open(f'./data/markers/{code}_sections.csv', 'w+') as f:
+  #   f.write('#Sections\n')
+  #   for section, timestamps in sections.items():
+  #     f.write(f'{section},{timestamps[0]},{timestamps[1]}\n')
 
   if remove_outliers:
     for column in remove_outliers:
-      trimmed_data = replace_outliers_from_column(trimmed_data, column=column, threshold=3)
-
+      trimmed_data = replace_outliers_from_column(trimmed_data,
+                                                  column=column,
+                                                  threshold=3)
 
   return trimmed_data, sections, gender, age, calmFirst
 
 
 
 def replace_outliers_from_column(data, column='DistanceToTargetPosition', threshold=3):
-    """
+  """
     Removes outliers from the specified column in the DataFrame based on a z-score threshold.
     Outliers are replaced by the column mean if their z-score exceeds the threshold.
     Args:
@@ -233,14 +327,14 @@ def replace_outliers_from_column(data, column='DistanceToTargetPosition', thresh
         column (str): The column from which to remove outliers.
         threshold (float): The z-score threshold for identifying outliers.
     """
-    new_data = data.copy()
-    z_scores = (new_data[column] - new_data[column].mean()) / new_data[column].std()
-    outliers = np.abs(z_scores) > threshold
-    new_data.loc[outliers, column] = new_data[column].mean()
-    return new_data
+  new_data = data.copy()
+  z_scores = (new_data[column] - new_data[column].mean()) / new_data[column].std()
+  outliers = np.abs(z_scores) > threshold
+  new_data.loc[outliers, column] = new_data[column].mean()
+  return new_data
 
 def remove_outliers_from_column(data, column='DistanceToTargetPosition', threshold=3):
-    """
+  """
     Removes outliers from the specified column in the DataFrame based on a z-score threshold.
     Outliers are dropped from the DataFrame.
     Args:
@@ -248,6 +342,6 @@ def remove_outliers_from_column(data, column='DistanceToTargetPosition', thresho
         column (str): The column from which to remove outliers.
         threshold (float): The z-score threshold for identifying outliers.
     """
-    new_data = data.copy()
-    z_scores = (new_data[column] - new_data[column].mean()) / new_data[column].std()
-    return new_data[~(np.abs(z_scores) > threshold)]
+  new_data = data.copy()
+  z_scores = (new_data[column] - new_data[column].mean()) / new_data[column].std()
+  return new_data[~(np.abs(z_scores) > threshold)]
