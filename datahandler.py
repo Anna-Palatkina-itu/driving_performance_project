@@ -58,17 +58,27 @@ def get_statistics(data, column='DistanceToTargetPosition',
   intense_start = sections['intense'][0]
   intense_end = sections['intense'][1]
 
+  before_start = sections['before'][0]
+  before_end = sections['before'][1]
+
   segment1 = data[(data['Timestamp'] > calm_start) &
                           (data['Timestamp'] < calm_end)][column].dropna()
   segment2 = data[(data['Timestamp'] > intense_start) &
                           (data['Timestamp'] < intense_end)][column].dropna()
+  
+  segment3 = data[(data['Timestamp'] > before_start) &
+                          (data['Timestamp'] < before_end)][column].dropna()
   #   print(segment1)
   assert(segment1.all() != np.nan)
   assert(segment2.all() != np.nan)
+  assert(segment3.all() != np.nan)
   assert(len(segment1) > 0)
   assert(len(segment2) > 0)
+  assert(len(segment3) > 0)
 
-  return np.mean(segment1), np.std(segment1), scp.stats.moment(segment1, order=3, center=True),  np.mean(segment2), np.std(segment2), scp.stats.moment(segment2, order=3, center=True)
+
+  return (np.mean(segment1), np.std(segment1), scp.stats.moment(segment1, order=3, center=True),  np.mean(segment2), np.std(segment2), scp.stats.moment(segment2, order=3, center=True),
+          np.mean(segment3), np.std(segment3), scp.stats.moment(segment3, order=3, center=True))
 
 
 def load_participant(code='L0S1Z2I3',
@@ -299,9 +309,9 @@ def load_participant(code='L0S1Z2I3',
 
   trimmed_data['Gender'] = gender
   trimmed_data['Age'] = age
-  print(f'code is {code}')
+  # print(f'code is {code}')
   trimmed_data['Participant'] = code
-  print(trimmed_data['Participant'].unique())
+  # print(trimmed_data['Participant'].unique())
   # #Save sections to new csv file
   # with open(f'./data/markers/{code}_sections.csv', 'w+') as f:
   #   f.write('#Sections\n')
