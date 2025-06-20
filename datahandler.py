@@ -61,6 +61,9 @@ def get_statistics(data, column='DistanceToTargetPosition',
   before_start = sections['before'][0]
   before_end = sections['before'][1]
 
+  after_start = sections['after'][0]
+  after_end = sections['after'][1]
+
   segment1 = data[(data['Timestamp'] > calm_start) &
                           (data['Timestamp'] < calm_end)][column].dropna()
   segment2 = data[(data['Timestamp'] > intense_start) &
@@ -68,17 +71,22 @@ def get_statistics(data, column='DistanceToTargetPosition',
   
   segment3 = data[(data['Timestamp'] > before_start) &
                           (data['Timestamp'] < before_end)][column].dropna()
-  #   print(segment1)
+                          
+  segment4 = data[(data['Timestamp'] > after_start) &
+                          (data['Timestamp'] < after_end)][column].dropna()
+  
   assert(segment1.all() != np.nan)
   assert(segment2.all() != np.nan)
   assert(segment3.all() != np.nan)
+  assert(segment4.all() != np.nan)
   assert(len(segment1) > 0)
   assert(len(segment2) > 0)
   assert(len(segment3) > 0)
+  assert(len(segment4) > 0)
 
 
   return (np.mean(segment1), np.std(segment1), scp.stats.moment(segment1, order=3, center=True),  np.mean(segment2), np.std(segment2), scp.stats.moment(segment2, order=3, center=True),
-          np.mean(segment3), np.std(segment3), scp.stats.moment(segment3, order=3, center=True))
+          np.mean(segment3), np.std(segment3), scp.stats.moment(segment3, order=3, center=True), np.mean(segment4), np.std(segment4), scp.stats.moment(segment4, order=3, center=True))
 
 
 def load_participant(code='L0S1Z2I3',
@@ -302,8 +310,8 @@ def load_participant(code='L0S1Z2I3',
 
   #Add column DrivingPerformance which is the mean corrected product of the distance to the target position and the distance to the target speed
   #Total lane width is 13m, minimum speed is 0, maximum 150
-  normalized_distance = (trimmed_data['DistanceToTargetPosition'] - 6.5) / 6.5
-  normalized_speed = (trimmed_data['DistanceToTargetSpeed'] - 75) / 75
+  normalized_distance = (trimmed_data['DistanceToTargetPosition']) / 13
+  normalized_speed = (trimmed_data['DistanceToTargetSpeed']) / 90
 
   trimmed_data['DrivingPerformance'] = normalized_distance * normalized_speed
 
