@@ -83,6 +83,7 @@ Matrix: Conditions, Matrix
 
 - eda timewindows for tonic, slow, fast phasic amplitude
 
-- Analyze the speedsign events
+- Analyze the speedsign events - DONE
 
-- Normalize combined driving performance
+- Normalize combined driving performance - DONE
+

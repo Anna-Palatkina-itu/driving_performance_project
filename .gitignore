@@ -1,5 +1,6 @@
 /stuff/
-/data/
+/data/*
+!/data/qual_groups.csv
 *.png
 /participant data/
 *.pyc
