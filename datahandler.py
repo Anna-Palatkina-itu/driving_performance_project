@@ -116,11 +116,20 @@ def load_participant(code='L0S1Z2I3',
     ts = pd.to_datetime(timestamp_str,
                         format="%d.%m.%Y,Time: %H:%M:%S.%f +02:00")
   except:
-    ts = pd.to_datetime(timestamp_str,
+    try:
+      ts = pd.to_datetime(timestamp_str,
                         format="%m/%d/%Y,Time: %H:%M:%S.%f +02:00")
-  ts = ts - timedelta(hours=2)
+    except:
+      print('No timestamp found')
+      age = None
+      gender = None
+  try:
 
-  nanoseconds = int(ts.value)
+    ts = ts - timedelta(hours=2)
+
+    nanoseconds = int(ts.value)
+  except:
+    nanoseconds = 0
 
   if eye_tracking:
     state_data = pd.read_csv(f'data/3d_eye_states_{code}.csv', comment='#')
@@ -312,11 +321,13 @@ def load_participant(code='L0S1Z2I3',
   #Total lane width is 13m, minimum speed is 0, maximum 150
   normalized_distance = (trimmed_data['DistanceToTargetPosition']) / 13
   normalized_speed = (trimmed_data['DistanceToTargetSpeed']) / 90
+  velocityx = trimmed_data['VelocityX']
 
   trimmed_data['DrivingPerformance'] = normalized_distance * normalized_speed
-
-  trimmed_data['Gender'] = gender
-  trimmed_data['Age'] = age
+  trimmed_data['ExtendedDrivingPerformance'] = trimmed_data['DrivingPerformance'] * velocityx
+  if gender:
+    trimmed_data['Gender'] = gender
+    trimmed_data['Age'] = age
   # print(f'code is {code}')
   trimmed_data['Participant'] = code
   # print(trimmed_data['Participant'].unique())
